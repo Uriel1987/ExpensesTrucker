@@ -1,8 +1,8 @@
 [{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.uriel.expensestracker",
-    "sha256_cert_fingerprints": ["YOUR_SHA256_FINGERPRINT"]
-  }
-}]
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.uriel.expensestracker",
+        "sha256_cert_fingerprints": ["90:DC:43:1F:C3:9B:F6:D8:F2:73:14:25:04:A0:9C:53:4B:4D:73:51:7B:EC:60:18:8A:23:37:3C:AD:2D:4A:23"]
+      }
+    }]
