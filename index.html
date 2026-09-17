@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#3f51b5">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap">
+<title>מעקב הוצאות</title>
+<style>
+  :root {
+    --bg: #eceff1;
+    --card-bg: #ffffff;
+    --text: #1a1c1e;
+    --text-muted: #5f6368;
+    --border: #e1e3e5;
+    --accent: #3f51b5;
+    --accent-dark: #303f9f;
+    --accent-text: #ffffff;
+    --danger: #d32f2f;
+    --success: #2e7d32;
+    --shadow: 0 1px 2px 0 rgba(60,64,67,.30), 0 1px 3px 1px rgba(60,64,67,.15);
+    --shadow-lg: 0 3px 5px -1px rgba(0,0,0,.2), 0 6px 10px 0 rgba(0,0,0,.14), 0 1px 18px 0 rgba(0,0,0,.12);
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121212; --card-bg: #1e1e1e; --text: #f0f0f0; --text-muted: #a8adb3;
+      --border: #333537; --accent: #8c9eff; --accent-dark: #536dfe; --accent-text: #12131a;
+      --danger: #ef5350; --success: #66bb6a;
+      --shadow: 0 1px 2px 0 rgba(0,0,0,.5), 0 1px 3px 1px rgba(0,0,0,.35);
+      --shadow-lg: 0 3px 5px -1px rgba(0,0,0,.4), 0 6px 10px 0 rgba(0,0,0,.3), 0 1px 18px 0 rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121212; --card-bg: #1e1e1e; --text: #f0f0f0; --text-muted: #a8adb3;
+    --border: #333537; --accent: #8c9eff; --accent-dark: #536dfe; --accent-text: #12131a;
+    --danger: #ef5350; --success: #66bb6a;
+    --shadow: 0 1px 2px 0 rgba(0,0,0,.5), 0 1px 3px 1px rgba(0,0,0,.35);
+    --shadow-lg: 0 3px 5px -1px rgba(0,0,0,.4), 0 6px 10px 0 rgba(0,0,0,.3), 0 1px 18px 0 rgba(0,0,0,.25);
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, Helvetica, sans-serif;
+    -webkit-text-size-adjust: 100%;
+  }
+  #app { max-width: 640px; margin: 0 auto; padding: 16px 16px 100px; min-height: 100vh; }
+  h1, h2, h3 { margin: 0; }
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 8px; }
+  .top-bar h1 { font-size: 20px; font-weight: 700; }
+  .top-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    background: var(--card-bg); border: none; color: var(--text);
+    border-radius: 50%; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 17px; box-shadow: var(--shadow);
+    transition: box-shadow .15s ease;
+  }
+  .icon-btn:active { box-shadow: none; background: var(--border); }
+
+  .month-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card-bg); border-radius: var(--radius); padding: 10px 14px;
+    box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  .month-nav button {
+    background: none; border: none; color: var(--accent);
+    font-size: 14px; font-weight: 700; padding: 6px 12px; cursor: pointer; border-radius: 8px;
+  }
+  .month-nav button:active { background: var(--border); }
+  .month-nav .label { font-weight: 700; font-size: 16px; text-align: center; flex: 1; }
+
+  .card { background: var(--card-bg); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); margin-bottom: 14px; }
+  .summary-row { display: flex; gap: 10px; }
+  .summary-box { flex: 1; text-align: center; }
+  .summary-box .val { font-size: 20px; font-weight: 700; }
+  .summary-box .lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .section-title { display: flex; align-items: center; justify-content: space-between; margin: 22px 0 10px; }
+  .section-title h2 { font-size: 14px; color: var(--text-muted); font-weight: 700; }
+  .section-title a { font-size: 13px; color: var(--accent); cursor: pointer; font-weight: 600; }
+
+  .bar-row { margin-bottom: 10px; }
+  .bar-row .bar-top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+  .bar-row .bar-top .cat { font-weight: 600; }
+  .bar-row .bar-top .amt { color: var(--text-muted); }
+  .bar-track { background: var(--border); border-radius: 6px; height: 8px; overflow: hidden; }
+  .bar-fill { background: var(--accent); height: 100%; border-radius: 6px; }
+
+  .empty-note { color: var(--text-muted); font-size: 14px; text-align: center; padding: 18px 0; }
+
+  .expense-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .expense-item:last-child { border-bottom: none; }
+  .expense-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .expense-info { flex: 1; min-width: 0; }
+  .expense-desc { font-weight: 600; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .expense-meta { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .expense-amt { font-weight: 700; font-size: 14px; white-space: nowrap; }
+  .recur-badge { font-size: 10px; background: var(--border); color: var(--text-muted); padding: 1px 6px; border-radius: 6px; margin-inline-start: 6px; vertical-align: middle; }
+
+  .fab {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-320px);
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--accent); color: var(--accent-text); border: none;
+    font-size: 26px; box-shadow: var(--shadow-lg); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; z-index: 50;
+    transition: transform .1s ease;
+  }
+  @media (max-width: 640px) { .fab { left: auto; right: 24px; transform: none; } }
+  .fab:active { transform: scale(0.94); background: var(--accent-dark); }
+  @media (max-width: 640px) { .fab:active { transform: scale(0.94); } }
+
+  .tabs { display: flex; background: var(--card-bg); border-radius: var(--radius); padding: 4px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .tab-btn { flex: 1; background: none; border: none; padding: 11px 8px; font-size: 13px; font-family: inherit; font-weight: 500; color: var(--text-muted); border-radius: 8px; cursor: pointer; }
+  .tab-btn.active { background: var(--accent); color: var(--accent-text); font-weight: 700; }
+
+  .pie-wrap { position: relative; width: 170px; height: 170px; margin: 4px auto 6px; }
+  .pie-wrap svg { display: block; }
+  .pie-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+  .pie-total { font-size: 15px; font-weight: 700; }
+  .pie-total-lbl { font-size: 11px; color: var(--text-muted); }
+  .legend-list { margin-top: 10px; }
+  .legend-item { padding: 7px 0; border-bottom: 1px solid var(--border); }
+  .legend-item:last-child { border-bottom: none; }
+  .legend-row { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+  .legend-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-pct { color: var(--text-muted); font-size: 12px; min-width: 32px; text-align: center; }
+  .legend-amt { font-weight: 700; min-width: 78px; text-align: left; }
+  .budget-bar { background: var(--border); height: 5px; border-radius: 3px; overflow: hidden; margin-top: 5px; }
+  .budget-bar-fill { height: 100%; background: var(--success); border-radius: 3px; }
+  .budget-bar-fill.over { background: var(--danger); }
+  .budget-label { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+  .budget-label.over { color: var(--danger); font-weight: 600; }
+
+  .filter-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .filter-row input[type=text] { flex: 2; margin: 0; }
+  .filter-row select { flex: 1; margin: 0; }
+  .filter-result-note { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+
+  .change-up { color: var(--danger); font-weight: 700; font-size: 12px; }
+  .change-down { color: var(--success); font-weight: 700; font-size: 12px; }
+  .change-flat { color: var(--text-muted); font-size: 12px; }
+  .month-row { cursor: pointer; }
+
+  .sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 100; }
+  .sheet { background: var(--card-bg); width: 100%; max-width: 640px; border-radius: 18px 18px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom)); max-height: 88vh; overflow-y: auto; }
+  .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .sheet-header h3 { font-size: 17px; }
+  .sheet-header .close { color: var(--text-muted); font-size: 22px; cursor: pointer; padding: 4px 8px; }
+
+  label { display: block; font-size: 13px; color: var(--text-muted); margin: 12px 0 5px; font-weight: 600; }
+  input[type=text], input[type=number], input[type=date], select {
+    width: 100%; padding: 11px 12px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 15px;
+  }
+  input[type=number], input[type=date] { direction: ltr; text-align: right; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .checkbox-row { display: flex; align-items: center; gap: 8px; margin: 16px 0 0; }
+  .checkbox-row input { width: 18px; height: 18px; }
+  .checkbox-row label { margin: 0; font-size: 14px; color: var(--text); }
+
+  .btn { width: 100%; padding: 13px; border-radius: 8px; border: none; font-size: 14px; font-family: inherit; font-weight: 700; letter-spacing: .02em; cursor: pointer; margin-top: 14px; }
+  .btn-primary { background: var(--accent); color: var(--accent-text); box-shadow: var(--shadow); }
+  .btn-primary:active { background: var(--accent-dark); }
+  .btn-danger { background: transparent; color: var(--danger); font-weight: 600; margin-top: 8px; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+  .btn:active { opacity: 0.85; }
+  .btn:disabled { opacity: 0.6; cursor: default; }
+
+  .divider-text { text-align: center; color: var(--text-muted); font-size: 12px; margin: 16px 0 4px; position: relative; }
+
+  .chip-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .chip { display: flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--border); padding: 6px 10px; border-radius: 20px; font-size: 13px; }
+  .chip .x { color: var(--danger); cursor: pointer; font-weight: 700; }
+
+  .cat-list { margin-top: 4px; }
+  .cat-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .cat-row:last-child { border-bottom: none; }
+  .cat-row-name { flex: 2; font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cat-row-budget { flex: 1; margin: 0 !important; padding: 8px !important; font-size: 13px !important; direction: ltr; text-align: center; }
+  .cat-row .x { color: var(--danger); cursor: pointer; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+
+  .recur-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .recur-item:last-child { border-bottom: none; }
+  .recur-info .name { font-weight: 600; font-size: 14px; }
+  .recur-info .meta { font-size: 12px; color: var(--text-muted); }
+  .recur-actions { display: flex; gap: 10px; }
+  .recur-actions span { cursor: pointer; font-size: 16px; color: var(--text-muted); }
+
+  .banner { background: #fff8e6; color: #8a6d00; border: 1px solid #f0dca0; border-radius: 10px; padding: 10px 12px; font-size: 13px; margin-bottom: 14px; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .banner { background: #332b0f; color: #f0d878; border-color: #574a1c; } }
+  :root[data-theme="dark"] .banner { background: #332b0f; color: #f0d878; border-color: #574a1c; }
+
+  .loading { text-align: center; padding: 60px 0; color: var(--text-muted); }
+  .months-chart { display: flex; align-items: flex-end; gap: 8px; height: 150px; }
+  .months-chart.tall { height: 190px; gap: 5px; }
+  .month-bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; cursor: pointer; }
+  .month-bar-amt { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; white-space: nowrap; }
+  .month-bar-track { width: 100%; max-width: 30px; flex: 1; display: flex; align-items: flex-end; }
+  .month-bar-fill { width: 100%; background: var(--border); border-radius: 6px 6px 0 0; min-height: 3px; }
+  .month-bar-fill.is-current { background: var(--accent); }
+  .month-bar-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
+  .month-bar-label.is-current { color: var(--accent); }
+  .export-option { display: block; width: 100%; text-align: right; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-top: 10px; cursor: pointer; font-size: 14px; font-weight: 600; color: var(--text); }
+  .export-option .sub { display: block; font-weight: 400; font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="loading" id="loading">טוען את ההוצאות שלך…</div>
+</div>
+
+<script>
+(function() {
+  "use strict";
+
+  // ---------- Config ----------
+  var DEFAULT_CATEGORIES = [
+    "אוכל בחוץ / טייק אווי",
+    "מכולת / סופר",
+    "חשמל",
+    "מים",
+    "גז",
+    "שכירות / משכנתא",
+    "תחבורה",
+    "טלפון / אינטרנט",
+    "מנויים ובידור",
+    "חינוך",
+    "בריאות וביטוח",
+    "טיפוח אישי",
+    "קניות",
+    "חיסכון והלוואות",
+    "שונות"
+  ];
+  var MISC_CATEGORY = "שונות";
+  var MONTH_SHORT_HE = ["ינו׳","פבר׳","מרץ","אפר׳","מאי","יונ׳","יול׳","אוג׳","ספט׳","אוק׳","נוב׳","דצמ׳"];
+
+  var state = {
+    db: null, useDb: false,
+    sampler: null, canScan: false, scanMode: "none",
+    downloader: null, canDownload: false,
+    categories: [],
+    budgets: {},
+    expenses: [],
+    recurring: [],
+    month: monthKeyOf(new Date()),
+    activeTab: "month",
+    filterText: "",
+    filterCategory: ""
+  };
+
+  function pad2(n) { return n < 10 ? "0" + n : "" + n; }
+  function monthKeyOf(d) { return d.getFullYear() + "-" + pad2(d.getMonth() + 1); }
+  function monthLabel(key) {
+    var parts = key.split("-");
+    var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, 1);
+    return d.toLocaleDateString("he-IL", { month: "long", year: "numeric" });
+  }
+  function daysInMonth(key) {
+    var parts = key.split("-");
+    return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10), 0).getDate();
+  }
+  function shiftMonth(key, delta) {
+    var parts = key.split("-");
+    var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1;
+    var d = new Date(y, m + delta, 1);
+    return monthKeyOf(d);
+  }
+  function trailingMonthKeys(monthKey, count) {
+    var out = [];
+    for (var i = count - 1; i >= 0; i--) out.push(shiftMonth(monthKey, -i));
+    return out;
+  }
+  function monthShortLabel(key) {
+    var m = parseInt(key.split("-")[1], 10) - 1;
+    return MONTH_SHORT_HE[m];
+  }
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+  }
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+  }
+  function fmtMoney(n) {
+    var v = Math.round((Number(n || 0) + Number.EPSILON) * 100) / 100;
+    return v.toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₪";
+  }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function isValidDateStr(s) { return typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+
+  // Pulls a likely total amount out of raw OCR text — works regardless of
+  // script/language, since digits look the same. Prefers a number on a line
+  // with a "total"-like keyword.
+  function extractAmountFromText(text) {
+    if (!text) return null;
+    var lines = text.split(/\n/);
+    var keywordRe = /(total|sum|amount|לתשלום|סה"?כ|סהכ)/i;
+    var numRe = /\d{1,3}(?:[.,]\d{3})*(?:[.,]\d{2})?|\d+(?:[.,]\d{2})?/g;
+    var candidates = [];
+    lines.forEach(function(line) {
+      var isKeywordLine = keywordRe.test(line);
+      var m;
+      numRe.lastIndex = 0;
+      while ((m = numRe.exec(line))) {
+        var raw = m[0].replace(/,/g, "");
+        var val = parseFloat(raw);
+        if (!isNaN(val) && val > 0) candidates.push({ val: val, keyword: isKeywordLine });
+      }
+    });
+    if (!candidates.length) return null;
+    var keywordHits = candidates.filter(function(c) { return c.keyword; });
+    var pool = keywordHits.length ? keywordHits : candidates;
+    pool.sort(function(a, b) { return b.val - a.val; });
+    return pool[0].val;
+  }
+
+  // Best-effort guess at a merchant/description line from raw OCR text —
+  // only meaningful with a real Hebrew model (Tesseract), not ML Kit. Picks
+  // the first line that isn't just numbers/symbols and has some real length.
+  // This is a rough first draft; real receipt photos are a hard case for any
+  // OCR engine, so the person should still check/edit it.
+  function guessDescriptionFromText(text) {
+    if (!text) return null;
+    var lines = text.split(/\n/).map(function(l) { return l.trim(); });
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      if (line.length < 3) continue;
+      var lettersOnly = line.replace(/[\d\s.,₪$%\-\/:]/g, "");
+      if (lettersOnly.length < 2) continue;
+      return line.slice(0, 60);
+    }
+    return null;
+  }
+
+  // ---------- Storage layer (db capability with localStorage fallback) ----------
+  var LS_KEYS = { categories: "exptrk_categories_he", budgets: "exptrk_budgets_he", expenses: "exptrk_expenses_he", recurring: "exptrk_recurring_he" };
+  function lsGet(key, fallback) { try { var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch (e) { return fallback; } }
+  function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+
+  var Storage = {
+    async init() {
+      // Native Android build (Capacitor): use the on-device Tesseract OCR plugin if present.
+      try {
+        if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+          if (window.Capacitor.Plugins && window.Capacitor.Plugins.ReceiptScanner) {
+            state.canScan = true;
+            state.scanMode = "tesseract";
+          }
+        }
+      } catch (e) {}
+      try {
+        if (window.claude && window.claude.use) {
+          var db = await window.claude.use("db");
+          if (db) { state.db = db; state.useDb = true; }
+          if (state.scanMode !== "tesseract") {
+            var sampler = await window.claude.use("sample");
+            if (sampler) {
+              try {
+                var limits = await sampler.limits();
+                if (limits && limits.images) { state.sampler = sampler; state.canScan = true; state.scanMode = "claude"; }
+              } catch (e) {}
+            }
+          }
+          var downloader = await window.claude.use("downloads");
+          if (downloader) { state.downloader = downloader; state.canDownload = true; }
+        }
+      } catch (e) {}
+    },
+    async loadCategories() {
+      if (state.useDb) {
+        try {
+          var snap = await state.db.doc("settings/categories").get();
+          if (snap && snap.exists && snap.data && snap.data().list) return snap.data().list;
+          await state.db.doc("settings/categories").set({ list: DEFAULT_CATEGORIES });
+          return DEFAULT_CATEGORIES.slice();
+        } catch (e) {}
+      }
+      var local = lsGet(LS_KEYS.categories, null);
+      if (!local) { local = DEFAULT_CATEGORIES.slice(); lsSet(LS_KEYS.categories, local); }
+      return local;
+    },
+    async saveCategories(list) {
+      if (state.useDb) { try { await state.db.doc("settings/categories").set({ list: list }); return; } catch (e) {} }
+      lsSet(LS_KEYS.categories, list);
+    },
+    async loadBudgets() {
+      if (state.useDb) {
+        try {
+          var snap = await state.db.doc("settings/budgets").get();
+          if (snap && snap.exists && snap.data) return snap.data().map || {};
+          return {};
+        } catch (e) {}
+      }
+      return lsGet(LS_KEYS.budgets, {});
+    },
+    async saveBudgets(map) {
+      if (state.useDb) { try { await state.db.doc("settings/budgets").set({ map: map }); return; } catch (e) {} }
+      lsSet(LS_KEYS.budgets, map);
+    },
+    async loadExpenses() {
+      if (state.useDb) {
+        try {
+          var snap = await state.db.collection("expenses").limit(1000).get();
+          var out = [];
+          snap.docs.forEach(function(d) { var data = d.data(); data.id = d.id; out.push(data); });
+          return out;
+        } catch (e) {}
+      }
+      return lsGet(LS_KEYS.expenses, []);
+    },
+    async addExpense(data) {
+      if (state.useDb) {
+        try { var ref = await state.db.collection("expenses").add(data); data.id = ref.id; return data; } catch (e) {}
+      }
+      data.id = uid();
+      var arr = lsGet(LS_KEYS.expenses, []); arr.push(data); lsSet(LS_KEYS.expenses, arr);
+      return data;
+    },
+    async updateExpense(id, data) {
+      if (state.useDb) { try { await state.db.collection("expenses").doc(id).update(data); return; } catch (e) {} }
+      var arr = lsGet(LS_KEYS.expenses, []);
+      var idx = arr.findIndex(function(e) { return e.id === id; });
+      if (idx >= 0) { Object.assign(arr[idx], data); lsSet(LS_KEYS.expenses, arr); }
+    },
+    async deleteExpense(id) {
+      if (state.useDb) { try { await state.db.collection("expenses").doc(id).delete(); return; } catch (e) {} }
+      var arr = lsGet(LS_KEYS.expenses, []).filter(function(e) { return e.id !== id; });
+      lsSet(LS_KEYS.expenses, arr);
+    },
+    async loadRecurring() {
+      if (state.useDb) {
+        try {
+          var snap = await state.db.collection("recurring").limit(200).get();
+          var out = [];
+          snap.docs.forEach(function(d) { var data = d.data(); data.id = d.id; out.push(data); });
+          return out;
+        } catch (e) {}
+      }
+      return lsGet(LS_KEYS.recurring, []);
+    },
+    async addRecurring(data) {
+      if (state.useDb) { try { var ref = await state.db.collection("recurring").add(data); data.id = ref.id; return data; } catch (e) {} }
+      data.id = uid();
+      var arr = lsGet(LS_KEYS.recurring, []); arr.push(data); lsSet(LS_KEYS.recurring, arr);
+      return data;
+    },
+    async updateRecurring(id, data) {
+      if (state.useDb) { try { await state.db.collection("recurring").doc(id).update(data); return; } catch (e) {} }
+      var arr = lsGet(LS_KEYS.recurring, []);
+      var idx = arr.findIndex(function(r) { return r.id === id; });
+      if (idx >= 0) { Object.assign(arr[idx], data); lsSet(LS_KEYS.recurring, arr); }
+    },
+    async deleteRecurring(id) {
+      if (state.useDb) { try { await state.db.collection("recurring").doc(id).delete(); return; } catch (e) {} }
+      var arr = lsGet(LS_KEYS.recurring, []).filter(function(r) { return r.id !== id; });
+      lsSet(LS_KEYS.recurring, arr);
+    }
+  };
+
+  // ---------- Recurring auto-generation ----------
+  async function ensureRecurringForMonth(monthKey) {
+    var dim = daysInMonth(monthKey);
+    for (var i = 0; i < state.recurring.length; i++) {
+      var tmpl = state.recurring[i];
+      if (tmpl.active === false) continue;
+      var already = state.expenses.some(function(e) { return e.recurringId === tmpl.id && e.date.slice(0, 7) === monthKey; });
+      if (already) continue;
+      var day = Math.min(tmpl.day || 1, dim);
+      var date = monthKey + "-" + pad2(day);
+      var saved = await Storage.addExpense({ date: date, amount: tmpl.amount, category: tmpl.category, description: tmpl.name, recurringId: tmpl.id, autoGenerated: true });
+      state.expenses.push(saved);
+    }
+  }
+
+  // ---------- Rendering ----------
+  var MATERIAL_PALETTE = ["#E53935","#D81B60","#8E24AA","#5E35B1","#3949AB","#1E88E5","#039BE5","#00ACC1","#00897B","#43A047","#7CB342","#C0CA33","#FDD835","#FB8C00","#F4511E","#6D4C41","#757575"];
+  function hashStr(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return Math.abs(h); }
+  function categoryColor(cat) {
+    var idx = state.categories.indexOf(cat);
+    if (idx === -1) idx = hashStr(cat);
+    return MATERIAL_PALETTE[idx % MATERIAL_PALETTE.length];
+  }
+  function monthExpenses() {
+    return state.expenses.filter(function(e) { return e.date && e.date.slice(0, 7) === state.month; })
+      .sort(function(a, b) { return b.date.localeCompare(a.date); });
+  }
+  function totalForMonth(monthKey) {
+    return state.expenses.filter(function(e) { return e.date && e.date.slice(0, 7) === monthKey; })
+      .reduce(function(s, e) { return s + Number(e.amount || 0); }, 0);
+  }
+  function categoryTotals(expenses) {
+    var map = {};
+    expenses.forEach(function(e) { map[e.category] = (map[e.category] || 0) + Number(e.amount || 0); });
+    return Object.keys(map).map(function(cat) { return { cat: cat, total: map[cat] }; }).sort(function(a, b) { return b.total - a.total; });
+  }
+
+  function pieChartHtml(totals, total) {
+    if (!totals.length) return '<div class="empty-note">אין הוצאות החודש עדיין.</div>';
+    var r = 60, cx = 80, cy = 80, sw = 30;
+    var circumference = 2 * Math.PI * r;
+    var acc = 0;
+    var circles = totals.map(function(t) {
+      var pct = total > 0 ? (t.total / total) : 0;
+      var dash = pct * circumference;
+      var seg = '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="' + categoryColor(t.cat) + '" ' +
+        'stroke-width="' + sw + '" stroke-dasharray="' + dash.toFixed(2) + ' ' + (circumference - dash).toFixed(2) + '" ' +
+        'stroke-dashoffset="' + (-acc).toFixed(2) + '"></circle>';
+      acc += dash;
+      return seg;
+    }).join("");
+    var svg = '<svg viewBox="0 0 160 160" width="170" height="170" style="transform:rotate(-90deg)">' + circles + '</svg>';
+    var legend = totals.map(function(t) {
+      var pct = total > 0 ? Math.round((t.total / total) * 100) : 0;
+      var html = '<div class="legend-item"><div class="legend-row"><span class="legend-dot" style="background:' + categoryColor(t.cat) + '"></span>' +
+        '<span class="legend-name">' + escapeHtml(t.cat) + '</span>' +
+        '<span class="legend-pct">' + pct + '%</span>' +
+        '<span class="legend-amt">' + fmtMoney(t.total) + '</span></div>';
+      var budget = state.budgets[t.cat];
+      if (budget && budget > 0) {
+        var bpct = Math.min(100, Math.round((t.total / budget) * 100));
+        var over = t.total > budget;
+        html += '<div class="budget-bar"><div class="budget-bar-fill' + (over ? ' over' : '') + '" style="width:' + bpct + '%"></div></div>' +
+          '<div class="budget-label' + (over ? ' over' : '') + '">' + fmtMoney(t.total) + ' מתוך תקציב ' + fmtMoney(budget) + (over ? ' — חריגה מהתקציב' : '') + '</div>';
+      }
+      html += '</div>';
+      return html;
+    }).join("");
+    return '<div class="pie-wrap">' + svg + '<div class="pie-center"><div class="pie-total">' + fmtMoney(total) + '</div><div class="pie-total-lbl">סה"כ</div></div></div>' +
+      '<div class="legend-list">' + legend + '</div>';
+  }
+
+  function monthsChartHtml(trailTotals, tall) {
+    var trailMax = Math.max.apply(null, trailTotals.map(function(t) { return t.total; }).concat([0.01]));
+    var html = '<div class="months-chart' + (tall ? ' tall' : '') + '">';
+    trailTotals.forEach(function(t) {
+      var pct = t.total > 0 ? Math.max(4, Math.round((t.total / trailMax) * 100)) : 2;
+      var isCur = t.key === state.month;
+      html += '<div class="month-bar-col" data-month="' + t.key + '">' +
+        '<div class="month-bar-amt">' + (t.total > 0 ? Math.round(t.total).toLocaleString("he-IL") : "0") + '</div>' +
+        '<div class="month-bar-track"><div class="month-bar-fill' + (isCur ? ' is-current' : '') + '" style="height:' + pct + '%"></div></div>' +
+        '<div class="month-bar-label' + (isCur ? ' is-current' : '') + '">' + monthShortLabel(t.key) + '</div>' +
+        '</div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function renderMonthTab() {
+    var expenses = monthExpenses();
+    var total = expenses.reduce(function(s, e) { return s + Number(e.amount || 0); }, 0);
+    var totals = categoryTotals(expenses);
+
+    var html = '<div class="month-nav"><button id="btn-prev">‹ הקודם</button>' +
+      '<div class="label">' + escapeHtml(monthLabel(state.month)) + '</div>' +
+      '<button id="btn-next">הבא ›</button></div>';
+
+    html += '<div class="card"><div class="summary-row">' +
+      '<div class="summary-box"><div class="val">' + fmtMoney(total) + '</div><div class="lbl">סה"כ הוצאות</div></div>' +
+      '<div class="summary-box"><div class="val">' + expenses.length + '</div><div class="lbl">תנועות</div></div>' +
+      '<div class="summary-box"><div class="val">' + state.recurring.filter(function(r){return r.active!==false;}).length + '</div><div class="lbl">קבועות</div></div>' +
+      '</div></div>';
+
+    html += '<div class="section-title"><h2>לפי קטגוריה</h2></div><div class="card">' + pieChartHtml(totals, total) + '</div>';
+
+    html += '<div class="section-title"><h2>הוצאות קבועות</h2><a id="btn-manage-recurring">ניהול</a></div><div class="card">';
+    var activeRecurring = state.recurring.filter(function(r) { return r.active !== false; });
+    if (!activeRecurring.length) { html += '<div class="empty-note">לא הוגדרו הוצאות קבועות. הוסיפו הוצאה וסמנו "חוזרת כל חודש".</div>'; }
+    else {
+      activeRecurring.forEach(function(r) {
+        html += '<div class="recur-item"><div class="recur-info"><div class="name">' + escapeHtml(r.name) + '</div>' +
+          '<div class="meta">' + escapeHtml(r.category) + ' · יום ' + r.day + ' בחודש</div></div>' +
+          '<div class="expense-amt">' + fmtMoney(r.amount) + '</div></div>';
+      });
+    }
+    html += '</div>';
+
+    html += '<div class="section-title"><h2>רשימת הוצאות</h2></div><div class="card">';
+    html += '<div class="filter-row">' +
+      '<input type="text" id="f-search" placeholder="חיפוש לפי תיאור או קטגוריה…" value="' + escapeHtml(state.filterText) + '">' +
+      '<select id="f-filter-cat"><option value="">כל הקטגוריות</option>' +
+      state.categories.map(function(c) { return '<option value="' + escapeHtml(c) + '"' + (c === state.filterCategory ? " selected" : "") + '>' + escapeHtml(c) + '</option>'; }).join("") +
+      '</select></div>';
+
+    var q = state.filterText.trim().toLowerCase();
+    var filteredExpenses = expenses.filter(function(e) {
+      var matchesText = !q || (e.description || "").toLowerCase().indexOf(q) !== -1 || e.category.toLowerCase().indexOf(q) !== -1;
+      var matchesCat = !state.filterCategory || e.category === state.filterCategory;
+      return matchesText && matchesCat;
+    });
+
+    if (q || state.filterCategory) {
+      html += '<div class="filter-result-note">מציג ' + filteredExpenses.length + ' מתוך ' + expenses.length + ' הוצאות</div>';
+    }
+
+    if (!expenses.length) { html += '<div class="empty-note">לא נרשמו הוצאות החודש עדיין.</div>'; }
+    else if (!filteredExpenses.length) { html += '<div class="empty-note">לא נמצאו הוצאות תואמות.</div>'; }
+    else {
+      filteredExpenses.forEach(function(e) {
+        var d = new Date(e.date + "T00:00:00");
+        var dLabel = d.toLocaleDateString("he-IL", { month: "short", day: "numeric" });
+        html += '<div class="expense-item" data-id="' + e.id + '"><div class="expense-dot" style="background:' + categoryColor(e.category) + '"></div>' +
+          '<div class="expense-info"><div class="expense-desc">' + escapeHtml(e.description || e.category) +
+          (e.recurringId ? '<span class="recur-badge">קבועה</span>' : '') + '</div>' +
+          '<div class="expense-meta">' + escapeHtml(e.category) + ' · ' + dLabel + '</div></div>' +
+          '<div class="expense-amt">' + fmtMoney(e.amount) + '</div></div>';
+      });
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function renderCompareTab() {
+    var trailKeys = trailingMonthKeys(state.month, 12);
+    var trailTotals = trailKeys.map(function(k) { return { key: k, total: totalForMonth(k) }; });
+
+    var html = '<div class="card">' + monthsChartHtml(trailTotals, true) + '</div>';
+
+    html += '<div class="section-title"><h2>פירוט חודשי</h2></div><div class="card">';
+    for (var i = trailTotals.length - 1; i >= 0; i--) {
+      var cur = trailTotals[i];
+      var prev = i > 0 ? trailTotals[i - 1] : null;
+      var changeHtml = "";
+      if (prev && prev.total > 0) {
+        var diffPct = Math.round(((cur.total - prev.total) / prev.total) * 100);
+        if (diffPct > 0) changeHtml = '<span class="change-up">▲ ' + diffPct + '% לעומת החודש הקודם</span>';
+        else if (diffPct < 0) changeHtml = '<span class="change-down">▼ ' + Math.abs(diffPct) + '% לעומת החודש הקודם</span>';
+        else changeHtml = '<span class="change-flat">ללא שינוי לעומת החודש הקודם</span>';
+      }
+      html += '<div class="recur-item month-row" data-month="' + cur.key + '"><div class="recur-info"><div class="name">' + escapeHtml(monthLabel(cur.key)) + '</div>' +
+        (changeHtml ? '<div class="meta">' + changeHtml + '</div>' : '') + '</div>' +
+        '<div class="expense-amt">' + fmtMoney(cur.total) + '</div></div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function render() {
+    var focusedId = document.activeElement && document.activeElement.id;
+    var selStart, selEnd;
+    if (focusedId === "f-search") {
+      selStart = document.activeElement.selectionStart;
+      selEnd = document.activeElement.selectionEnd;
+    }
+
+    var html = "";
+    html += '<div class="top-bar"><h1>💰 מעקב הוצאות</h1>' +
+      '<div class="top-actions"><span class="icon-btn" id="btn-export" title="ייצוא">⬇️</span><span class="icon-btn" id="btn-settings" title="קטגוריות">🏷️</span></div></div>';
+
+    if (!state.useDb) {
+      html += '<div class="banner">השמירה מתבצעת בדפדפן הזה בלבד ולא מסונכרנת לחשבון. הנתונים יישמרו כל עוד לא תנקו את זיכרון הדפדפן.</div>';
+    }
+
+    html += '<div class="tabs">' +
+      '<button class="tab-btn' + (state.activeTab === "month" ? " active" : "") + '" data-tab="month">החודש הזה</button>' +
+      '<button class="tab-btn' + (state.activeTab === "compare" ? " active" : "") + '" data-tab="compare">השוואת חודשים</button>' +
+      '</div>';
+
+    html += state.activeTab === "compare" ? renderCompareTab() : renderMonthTab();
+
+    html += '<button class="fab" id="btn-add">+</button>';
+
+    document.getElementById("app").innerHTML = html;
+    attachHandlers();
+
+    if (focusedId === "f-search") {
+      var el = byId("f-search");
+      if (el) { el.focus(); try { el.setSelectionRange(selStart, selEnd); } catch (e) {} }
+    }
+  }
+
+  function byId(id) { return document.getElementById(id); }
+
+  function attachHandlers() {
+    document.querySelectorAll(".tab-btn").forEach(function(el) {
+      el.onclick = function() { state.activeTab = el.getAttribute("data-tab"); render(); };
+    });
+    if (byId("btn-prev")) byId("btn-prev").onclick = function() { changeMonth(-1); };
+    if (byId("btn-next")) byId("btn-next").onclick = function() { changeMonth(1); };
+    if (byId("btn-add")) byId("btn-add").onclick = function() { openExpenseSheet(null); };
+    if (byId("btn-settings")) byId("btn-settings").onclick = openSettingsSheet;
+    if (byId("btn-export")) byId("btn-export").onclick = openExportSheet;
+    if (byId("btn-manage-recurring")) byId("btn-manage-recurring").onclick = openRecurringSheet;
+    if (byId("f-search")) {
+      byId("f-search").oninput = function() { state.filterText = this.value; render(); };
+    }
+    if (byId("f-filter-cat")) {
+      byId("f-filter-cat").onchange = function() { state.filterCategory = this.value; render(); };
+    }
+    document.querySelectorAll(".expense-item").forEach(function(el) {
+      el.onclick = function() { openExpenseSheet(el.getAttribute("data-id")); };
+    });
+    document.querySelectorAll(".month-bar-col, .month-row").forEach(function(el) {
+      el.onclick = async function() {
+        var key = el.getAttribute("data-month");
+        state.month = key;
+        state.activeTab = "month";
+        await ensureRecurringForMonth(state.month);
+        render();
+      };
+    });
+  }
+
+  async function changeMonth(delta) {
+    state.month = shiftMonth(state.month, delta);
+    await ensureRecurringForMonth(state.month);
+    render();
+  }
+
+  // ---------- Sheets (modals) ----------
+  function openSheet(innerHtml) {
+    var overlay = document.createElement("div");
+    overlay.className = "sheet-overlay";
+    overlay.innerHTML = '<div class="sheet">' + innerHtml + '</div>';
+    overlay.addEventListener("click", function(ev) { if (ev.target === overlay) document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
+    return overlay;
+  }
+  function closeSheet(overlay) { if (overlay && overlay.parentNode) overlay.parentNode.removeChild(overlay); }
+
+  function categoryOptions(selected) {
+    return state.categories.map(function(c) {
+      return '<option value="' + escapeHtml(c) + '"' + (c === selected ? " selected" : "") + '>' + escapeHtml(c) + '</option>';
+    }).join("");
+  }
+
+  // ---- Receipt scan error copy ----
+  function scanErrorMessage(code) {
+    switch (code) {
+      case "images_unavailable": return "סריקת קבלות אינה זמינה כאן.";
+      case "image_rejected": return "לא ניתן לקרוא את התמונה הזו. נסו תמונה אחרת.";
+      case "rate_limited": return "יותר מדי בקשות כרגע. נסו שוב בעוד רגע.";
+      case "refused": return "לא ניתן היה לנתח את התמונה הזו.";
+      case "invalid_json":
+      case "empty_completion": return "לא הצלחתי לזהות את פרטי הקבלה. אפשר למלא ידנית.";
+      case "not_granted":
+      case "sampling_disabled":
+      case "not_declared": return "סריקת קבלות לא זמינה בחשבון הזה.";
+      case "cancelled": return null;
+      default: return "משהו השתבש בסריקה. אפשר למלא ידנית.";
+    }
+  }
+
+  function openExpenseSheet(expenseId) {
+    var existing = expenseId ? state.expenses.find(function(e) { return e.id === expenseId; }) : null;
+    var defaultDate = existing ? existing.date : (state.month === monthKeyOf(new Date()) ? todayStr() : state.month + "-01");
+    var isRecurringInstance = existing && existing.recurringId;
+
+    var html = '<div class="sheet-header"><h3>' + (existing ? "עריכת הוצאה" : "הוספת הוצאה") + '</h3><span class="close" id="sheet-close">✕</span></div>';
+
+    if (!existing) {
+      html += '<input type="file" id="f-scan-input" accept="image/*" capture="environment" style="display:none">' +
+        '<button type="button" class="btn btn-secondary" id="f-scan-btn">📷 סריקת קבלה (מילוי אוטומטי)</button>' +
+        '<div class="divider-text">— או הזינו ידנית —</div>';
+    }
+
+    html += '<label>תיאור</label>' +
+      '<input type="text" id="f-desc" placeholder="לדוגמה: ארוחת ערב" value="' + escapeHtml(existing ? existing.description : "") + '">' +
+      '<label>סכום (₪)</label>' +
+      '<input type="number" id="f-amount" inputmode="decimal" step="0.01" min="0" placeholder="0.00" value="' + (existing ? existing.amount : "") + '">' +
+      '<label>קטגוריה</label>' +
+      '<select id="f-category">' + categoryOptions(existing ? existing.category : state.categories[0]) + '</select>' +
+      '<label>תאריך</label>' +
+      '<input type="date" id="f-date" value="' + defaultDate + '">';
+
+    if (!existing) {
+      html += '<div class="checkbox-row"><input type="checkbox" id="f-recurring"><label for="f-recurring">חוזרת כל חודש (למשל מנוי, חשבון טלפון)</label></div>' +
+        '<div id="f-day-wrap" style="display:none;"><label>באיזה יום בחודש היא מחויבת</label>' +
+        '<input type="number" id="f-day" min="1" max="28" value="1"></div>';
+    } else if (isRecurringInstance) {
+      html += '<div class="banner" style="margin-top:14px;">הוצאה זו נוצרה אוטומטית מהוצאה קבועה. עריכה תשנה רק את הרשומה של החודש הזה.</div>';
+    }
+
+    html += '<button class="btn btn-primary" id="f-save">שמירה</button>';
+    if (existing) html += '<button class="btn btn-danger" id="f-delete">מחיקת ההוצאה</button>';
+
+    var overlay = openSheet(html);
+    document.getElementById("sheet-close").onclick = function() { closeSheet(overlay); };
+
+    var recurringChk = document.getElementById("f-recurring");
+    if (recurringChk) {
+      recurringChk.onchange = function() {
+        document.getElementById("f-day-wrap").style.display = recurringChk.checked ? "block" : "none";
+        if (recurringChk.checked) {
+          var dateVal = document.getElementById("f-date").value;
+          if (dateVal) document.getElementById("f-day").value = parseInt(dateVal.slice(8, 10), 10);
+        }
+      };
+    }
+
+    var scanBtn = document.getElementById("f-scan-btn");
+    if (scanBtn) {
+      var scanInput = document.getElementById("f-scan-input");
+
+      if (state.scanMode === "tesseract") {
+        // Native Android build: take a photo via Capacitor Camera, run it through
+        // the on-device ReceiptScanner (Tesseract OCR, with a bundled Hebrew model).
+        scanBtn.onclick = async function() {
+          var Camera = window.Capacitor.Plugins.Camera;
+          var ReceiptScanner = window.Capacitor.Plugins.ReceiptScanner;
+          if (!Camera || !ReceiptScanner) { alert("סריקת קבלות לא זמינה בגרסה הזו של האפליקציה."); return; }
+          scanBtn.disabled = true;
+          var originalLabel = scanBtn.textContent;
+          scanBtn.textContent = "🔎 סורק את הקבלה…";
+          try {
+            var photo = await Camera.getPhoto({ resultType: "uri", source: "PROMPT", quality: 80 });
+            var path = photo.path || photo.webPath;
+            var res = await ReceiptScanner.scanImage({ path: path });
+            var rawText = res && res.text;
+            var amt = extractAmountFromText(rawText);
+            var desc = guessDescriptionFromText(rawText);
+            if (amt) document.getElementById("f-amount").value = amt;
+            if (desc) document.getElementById("f-desc").value = desc;
+            if (amt || desc) {
+              alert("זיהוי ראשוני (Tesseract, מקומי, תומך בעברית) מולא בטופס — יש לבדוק ולתקן לפי הצורך, כולל הקטגוריה.");
+            } else {
+              alert("לא הצלחתי לזהות טקסט ברור בקבלה. אפשר למלא ידנית.");
+            }
+          } catch (e) {
+            if (e && e.message !== "User cancelled photos app") alert("הסריקה נכשלה. אפשר למלא ידנית.");
+          } finally {
+            scanBtn.disabled = false;
+            scanBtn.textContent = originalLabel;
+          }
+        };
+      } else {
+      scanBtn.onclick = function() {
+        if (!state.canScan) { alert("סריקת קבלות לא זמינה כרגע בתצוגה הזו."); return; }
+        scanInput.click();
+      };
+      scanInput.onchange = async function() {
+        var file = scanInput.files && scanInput.files[0];
+        if (!file) return;
+        scanBtn.disabled = true;
+        var originalLabel = scanBtn.textContent;
+        scanBtn.textContent = "🔎 סורק את הקבלה…";
+        try {
+          var catList = state.categories.join(", ");
+          var prompt = "זוהי תמונה של קבלה או חשבונית. חלץ ממנה פרטים והחזר אך ורק אובייקט JSON תקין, בלי טקסט נוסף, בפורמט הבא:\n" +
+            '{"amount": מספר (הסכום הכולל ששולם, ללא סימן מטבע), ' +
+            '"description": מחרוזת קצרה בעברית (שם העסק או תיאור הקנייה), ' +
+            '"category": אחת מהקטגוריות הבאות בדיוק כפי שהן כתובות (' + catList + '), ' +
+            '"date": תאריך בפורמט YYYY-MM-DD אם מופיע בקבלה, אחרת null}';
+          var result = await state.sampler.json(prompt, { images: file, modelTier: "default", cache: false });
+          if (result && typeof result === "object") {
+            if (result.description) document.getElementById("f-desc").value = String(result.description).slice(0, 120);
+            var amt2 = parseFloat(result.amount);
+            if (!isNaN(amt2) && amt2 > 0) document.getElementById("f-amount").value = amt2;
+            if (result.category && state.categories.indexOf(result.category) !== -1) {
+              document.getElementById("f-category").value = result.category;
+            } else {
+              document.getElementById("f-category").value = state.categories.indexOf(MISC_CATEGORY) !== -1 ? MISC_CATEGORY : state.categories[0];
+            }
+            if (isValidDateStr(result.date)) document.getElementById("f-date").value = result.date;
+          }
+        } catch (e) {
+          var msg = scanErrorMessage(e && e.code);
+          if (msg) alert(msg);
+        } finally {
+          scanBtn.disabled = false;
+          scanBtn.textContent = originalLabel;
+          scanInput.value = "";
+        }
+      };
+      }
+    }
+
+    document.getElementById("f-save").onclick = async function() {
+      var desc = document.getElementById("f-desc").value.trim();
+      var amount = parseFloat(document.getElementById("f-amount").value);
+      var category = document.getElementById("f-category").value;
+      var date = document.getElementById("f-date").value;
+
+      if (!amount || amount <= 0 || isNaN(amount)) { alert("נא להזין סכום תקין."); return; }
+      if (!date) { alert("נא לבחור תאריך."); return; }
+
+      if (existing) {
+        var updates = { description: desc, amount: amount, category: category, date: date };
+        await Storage.updateExpense(existing.id, updates);
+        Object.assign(existing, updates);
+      } else {
+        var makeRecurring = recurringChk && recurringChk.checked;
+        if (makeRecurring) {
+          var day = parseInt(document.getElementById("f-day").value, 10) || parseInt(date.slice(8, 10), 10);
+          var tmpl = await Storage.addRecurring({ name: desc || category, amount: amount, category: category, day: day, active: true });
+          state.recurring.push(tmpl);
+          var exp = await Storage.addExpense({ date: date, amount: amount, category: category, description: desc || category, recurringId: tmpl.id });
+          state.expenses.push(exp);
+        } else {
+          var exp2 = await Storage.addExpense({ date: date, amount: amount, category: category, description: desc });
+          state.expenses.push(exp2);
+        }
+      }
+      closeSheet(overlay);
+      render();
+    };
+
+    var delBtn = document.getElementById("f-delete");
+    if (delBtn) {
+      delBtn.onclick = async function() {
+        if (!confirm("למחוק את ההוצאה?")) return;
+        await Storage.deleteExpense(existing.id);
+        state.expenses = state.expenses.filter(function(e) { return e.id !== existing.id; });
+        closeSheet(overlay);
+        render();
+      };
+    }
+  }
+
+  function openEditRecurringSheet(id, onSaved) {
+    var r = state.recurring.find(function(x) { return x.id === id; });
+    if (!r) return;
+    var html = '<div class="sheet-header"><h3>עריכת הוצאה קבועה</h3><span class="close" id="edit-close">✕</span></div>' +
+      '<label>שם</label>' +
+      '<input type="text" id="er-name" value="' + escapeHtml(r.name) + '">' +
+      '<label>סכום (₪)</label>' +
+      '<input type="number" id="er-amount" inputmode="decimal" step="0.01" min="0" value="' + r.amount + '">' +
+      '<label>קטגוריה</label>' +
+      '<select id="er-category">' + categoryOptions(r.category) + '</select>' +
+      '<label>באיזה יום בחודש היא מחויבת</label>' +
+      '<input type="number" id="er-day" min="1" max="28" value="' + r.day + '">' +
+      '<div class="banner" style="margin-top:14px;">השינוי ישפיע רק על חודשים הבאים. הוצאות שכבר נוצרו לא ישתנו.</div>' +
+      '<button class="btn btn-primary" id="er-save">שמירה</button>';
+    var editOverlay = openSheet(html);
+    document.getElementById("edit-close").onclick = function() { closeSheet(editOverlay); };
+    document.getElementById("er-save").onclick = async function() {
+      var name = document.getElementById("er-name").value.trim();
+      var amount = parseFloat(document.getElementById("er-amount").value);
+      var category = document.getElementById("er-category").value;
+      var day = parseInt(document.getElementById("er-day").value, 10);
+      if (!amount || amount <= 0 || isNaN(amount)) { alert("נא להזין סכום תקין."); return; }
+      if (!day || day < 1 || day > 28) { alert("נא להזין יום תקין בין 1 ל-28."); return; }
+      var updates = { name: name || category, amount: amount, category: category, day: day };
+      await Storage.updateRecurring(id, updates);
+      Object.assign(r, updates);
+      closeSheet(editOverlay);
+      if (onSaved) onSaved();
+    };
+  }
+
+  function openRecurringSheet() {
+    function body() {
+      var html = '<div class="sheet-header"><h3>הוצאות קבועות</h3><span class="close" id="sheet-close">✕</span></div>';
+      if (!state.recurring.length) {
+        html += '<div class="empty-note">אין עדיין הוצאות קבועות. הוסיפו הוצאה וסמנו "חוזרת כל חודש".</div>';
+      } else {
+        state.recurring.forEach(function(r) {
+          html += '<div class="recur-item"><div class="recur-info"><div class="name">' + escapeHtml(r.name) +
+            (r.active === false ? ' <span class="recur-badge">מושהית</span>' : '') + '</div>' +
+            '<div class="meta">' + escapeHtml(r.category) + ' · ' + fmtMoney(r.amount) + ' ביום ' + r.day + '</div></div>' +
+            '<div class="recur-actions"><span data-act="edit" data-id="' + r.id + '">✏️</span>' +
+            '<span data-act="toggle" data-id="' + r.id + '">' + (r.active === false ? "▶️" : "⏸") + '</span>' +
+            '<span data-act="delete" data-id="' + r.id + '">🗑️</span></div></div>';
+        });
+      }
+      return html;
+    }
+    var overlay = openSheet(body());
+    function wire() {
+      document.getElementById("sheet-close").onclick = function() { closeSheet(overlay); };
+      overlay.querySelectorAll('[data-act="edit"]').forEach(function(el) {
+        el.onclick = function() {
+          openEditRecurringSheet(el.getAttribute("data-id"), function() {
+            overlay.querySelector(".sheet").innerHTML = body(); wire(); render();
+          });
+        };
+      });
+      overlay.querySelectorAll('[data-act="toggle"]').forEach(function(el) {
+        el.onclick = async function() {
+          var id = el.getAttribute("data-id");
+          var r = state.recurring.find(function(x) { return x.id === id; });
+          var newActive = r.active === false ? true : false;
+          await Storage.updateRecurring(id, { active: newActive });
+          r.active = newActive;
+          overlay.querySelector(".sheet").innerHTML = body(); wire(); render();
+        };
+      });
+      overlay.querySelectorAll('[data-act="delete"]').forEach(function(el) {
+        el.onclick = async function() {
+          if (!confirm('להפסיק את ההוצאה הקבועה הזו? רשומות עבר יישארו, אבל היא לא תתווסף אוטומטית בחודשים הבאים.')) return;
+          var id = el.getAttribute("data-id");
+          await Storage.deleteRecurring(id);
+          state.recurring = state.recurring.filter(function(x) { return x.id !== id; });
+          overlay.querySelector(".sheet").innerHTML = body(); wire(); render();
+        };
+      });
+    }
+    wire();
+  }
+
+  function openSettingsSheet() {
+    function body() {
+      var rows = state.categories.map(function(c) {
+        var budget = state.budgets[c] || "";
+        return '<div class="cat-row" data-cat="' + escapeHtml(c) + '">' +
+          '<span class="cat-row-name">' + escapeHtml(c) + '</span>' +
+          '<input type="number" class="cat-row-budget" min="0" step="1" placeholder="ללא תקציב" value="' + budget + '">' +
+          '<span class="x" data-cat="' + escapeHtml(c) + '">✕</span></div>';
+      }).join("");
+      return '<div class="sheet-header"><h3>קטגוריות ותקציבים</h3><span class="close" id="sheet-close">✕</span></div>' +
+        '<div class="cat-list">' + rows + '</div>' +
+        '<label>הוספת קטגוריה</label>' +
+        '<input type="text" id="new-cat" placeholder="לדוגמה: נסיעות לחו״ל">' +
+        '<button class="btn btn-secondary" id="add-cat">הוספה</button>';
+    }
+    var overlay = openSheet(body());
+    function wire() {
+      document.getElementById("sheet-close").onclick = function() { closeSheet(overlay); };
+      overlay.querySelectorAll(".cat-row-budget").forEach(function(el) {
+        el.onchange = async function() {
+          var cat = el.closest(".cat-row").getAttribute("data-cat");
+          var val = parseFloat(el.value);
+          if (!val || val <= 0 || isNaN(val)) { delete state.budgets[cat]; } else { state.budgets[cat] = val; }
+          await Storage.saveBudgets(state.budgets);
+        };
+      });
+      overlay.querySelectorAll(".x").forEach(function(el) {
+        el.onclick = async function() {
+          var cat = el.getAttribute("data-cat");
+          if (state.categories.length <= 1) { alert("חייבת להישאר לפחות קטגוריה אחת."); return; }
+          state.categories = state.categories.filter(function(c) { return c !== cat; });
+          delete state.budgets[cat];
+          await Storage.saveCategories(state.categories);
+          await Storage.saveBudgets(state.budgets);
+          overlay.querySelector(".sheet").innerHTML = body(); wire(); render();
+        };
+      });
+      document.getElementById("add-cat").onclick = async function() {
+        var input = document.getElementById("new-cat");
+        var val = input.value.trim();
+        if (!val) return;
+        if (state.categories.indexOf(val) !== -1) { input.value = ""; return; }
+        state.categories.push(val);
+        await Storage.saveCategories(state.categories);
+        overlay.querySelector(".sheet").innerHTML = body(); wire();
+      };
+    }
+    wire();
+  }
+
+  // ---------- CSV export ----------
+  function csvEscape(val) {
+    var s = String(val == null ? "" : val);
+    if (/[",\n]/.test(s)) s = '"' + s.replace(/"/g, '""') + '"';
+    return s;
+  }
+  function buildCsv(expenses) {
+    var rows = [["תאריך", "קטגוריה", "תיאור", "סכום", "הוצאה קבועה"]];
+    expenses.slice().sort(function(a, b) { return a.date.localeCompare(b.date); }).forEach(function(e) {
+      rows.push([e.date, e.category, e.description || "", Number(e.amount || 0).toFixed(2), e.recurringId ? "כן" : "לא"]);
+    });
+    var csv = rows.map(function(r) { return r.map(csvEscape).join(","); }).join("\r\n");
+    return "\uFEFF" + csv; // BOM so Hebrew displays correctly in Excel
+  }
+  async function exportCsv(scope) {
+    var expenses = scope === "month" ? monthExpenses() : state.expenses;
+    if (!expenses.length) { alert("אין נתונים לייצוא."); return; }
+    var csv = buildCsv(expenses);
+    var filename = scope === "month" ? ("הוצאות-" + state.month + ".csv") : "כל-ההוצאות.csv";
+    if (state.canDownload) {
+      try {
+        await state.downloader.save({ filename: filename, data: csv });
+        return;
+      } catch (e) {
+        if (e && e.code === "declined") return;
+        // fall through to browser fallback
+      }
+    }
+    try {
+      var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
+    } catch (e) {
+      alert("הייצוא לא זמין בתצוגה הזו.");
+    }
+  }
+  function openExportSheet() {
+    var html = '<div class="sheet-header"><h3>ייצוא ל-CSV</h3><span class="close" id="sheet-close">✕</span></div>' +
+      '<button type="button" class="export-option" id="exp-month">ייצוא החודש הנוכחי<span class="sub">' + escapeHtml(monthLabel(state.month)) + '</span></button>' +
+      '<button type="button" class="export-option" id="exp-all">ייצוא כל הנתונים<span class="sub">כל ההוצאות שנשמרו</span></button>';
+    var overlay = openSheet(html);
+    document.getElementById("sheet-close").onclick = function() { closeSheet(overlay); };
+    document.getElementById("exp-month").onclick = function() { exportCsv("month"); closeSheet(overlay); };
+    document.getElementById("exp-all").onclick = function() { exportCsv("all"); closeSheet(overlay); };
+  }
+
+  // ---------- Boot ----------
+  async function boot() {
+    await Storage.init();
+    state.categories = await Storage.loadCategories();
+    state.budgets = await Storage.loadBudgets();
+    state.expenses = await Storage.loadExpenses();
+    state.recurring = await Storage.loadRecurring();
+    await ensureRecurringForMonth(state.month);
+    render();
+  }
+
+  boot();
+})();
+</script>
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function() {
+      navigator.serviceWorker.register("service-worker.js").catch(function() {});
+    });
+  }
+</script>
+</body>
+</html>
